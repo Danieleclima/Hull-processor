@@ -46,8 +46,11 @@ const STRATEGIES = [
       // How to get the right value here?
       const website = _.head(values);
       const uri = urijs(website);
+      const domain = uri.domain()
+      console.log("Domain log:", domain)
       // console.log(uri);
-      return 'placeholder.com';
+      // return 'placeholder.com';
+      return domain;
     },
   },
   {
@@ -73,6 +76,7 @@ class Compute {
 
   run() {
     this._composeAttributeData();
+    console.log("First console log of this:",this, '\n');
     switch (this.compute_template) {
       case 'most_frequent':
         this._computeMostFrequentValue(this.attribute_data);
@@ -84,7 +88,7 @@ class Compute {
         this._computeCustomMethod(this.attribute_data);
         break;
       default:
-        return;
+        this._computeMethod(this.attribute_data);
     }
 
     this._checkExitConditions();
@@ -93,8 +97,17 @@ class Compute {
     }
   }
 
-  _computeCustomMethod(values) {
+  _computeMethod(values) {
     if (_.isEmpty(values)) return;
+    const attribute = _.head(values);
+    this.attribute[this.output_property] = attribute
+    console.log ("Compute Method:", this)
+  }
+
+  _computeCustomMethod(values) {
+     // checking if this.attribute_data is empty 
+    if (_.isEmpty(values)) return;
+    // adding an attribute to the this.attribute property using a custom strategy method
     const attribute = this.custom_method(values);
     this.attribute[this.output_property] = attribute;
   }
@@ -111,15 +124,19 @@ class Compute {
     );
   }
 
+  // mapping paths to their current values and adding all those values to the this.attribute_data property
   _composeAttributeData() {
     const values = _.map(this.input_properties, (property) => {
       const value = _.get(account, property, undefined);
+      console.log("ComposeAttribute Method result:", property, value)
       return value;
     });
+    console.log("Values array", values)
     this.attribute_data = _.compact(values);
   }
 
   _checkExitConditions() {
+    // checking if the this.attribute keys are empty.
     const isEmpty = (target) => {
       const keys = Object.keys(target);
       return keys.length === 0;
@@ -128,14 +145,17 @@ class Compute {
     if (this.output_property === undefined) return;
     if (isEmpty(this.attribute) === true) return;
 
+    // checking if there's already an existing value for the attribute in question.
     const path = _.replace(this.output_property, '/', '.');
     const currentAttributeValue = _.get(account, path, undefined);
+    console.log("Current Attribute Value:", currentAttributeValue)
 
     if (currentAttributeValue === undefined) {
       this.update_needed = true;
       return;
     }
 
+    console.log("Is new value logic:", {[this.output_property]: currentAttributeValue})
     const isNewValue = !_.isEqual(this.attribute, {
       [this.output_property]: currentAttributeValue,
     });
