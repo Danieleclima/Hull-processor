@@ -1,3 +1,4 @@
+const { values } = require("lodash");
 const _ = require("lodash");
 const urijs = require("urijs");
 
@@ -76,14 +77,7 @@ const STRATEGIES = [
       "aggregations.country_name_headquarters",
     ],
     compute_template: "custom",
-    custom_method: (values) => {
-      const countries = _.compact(
-        _.map(values, (country) => {
-            return country;  
-        })
-      );
-      return _.head(_(countries).countBy().entries().maxBy(_.last));
-    },
+    custom_method: mostCommonValue,
   },
   {
     output_property: "account/ISO_country_code",
@@ -94,16 +88,18 @@ const STRATEGIES = [
       "goodfit.country_code",
     ],
     compute_template: "custom",
-    custom_method: (values) => {
-      const countries = _.compact(
-        _.map(values, (country) => {
-            return country;
-        })
-      );
-      return _.head(_(countries).countBy().entries().maxBy(_.last));
-    },
+    custom_method: mostCommonValue,
   },
 ];
+
+function mostCommonValue(values){
+  const list = _.compact(
+    _.map(values, (value) => {
+        return value;
+    })
+  );
+  return _.head(_(list).countBy().entries().maxBy(_.last))
+  }
 
 class Compute {
   constructor(strategy) {
@@ -118,54 +114,34 @@ class Compute {
 
   run() {
     this._composeAttributeData();
-    console.log("First console log of this:", this, "\n");
-    switch (this.compute_template) {
-      case "most_frequent":
-        this._computeMostFrequentValue(this.attribute_data);
-        break;
-      case "max":
-        this._computeHighestValue(this.attribute_data);
-        break;
-      case "custom":
-        this._computeCustomMethod(this.attribute_data);
-        break;
-      default:
-        this._computeMethod(this.attribute_data);
-    }
-
+    this._computeMethod(this.attribute_data);
     this._checkExitConditions();
     if (CONSOLE_LOG_COMPUTE_DATA) {
       console.log(this, "\n");
     }
   }
-
-  _computeMethod(values) {
+  _computeMethod(values){
     if (_.isEmpty(values)) return;
-    const attribute = _.head(values);
-    this.attribute[this.output_property] = attribute;
-    console.log("Compute Method:", this);
-  }
-
-  _computeCustomMethod(values) {
-    // checking if this.attribute_data is empty
-    if (_.isEmpty(values)) return;
-    // adding an attribute to the this.attribute property using a custom strategy method
-    const attribute = this.custom_method(values);
-    this.attribute[this.output_property] = attribute;
-  }
-
-  _computeHighestValue(values) {
-    if (_.isEmpty(values)) return;
-    this.attribute[this.output_property] = _.max(values);
-  }
-
-  _computeMostFrequentValue(values) {
-    if (_.isEmpty(values)) return;
-    this.attribute[this.output_property] = _.head(
-      _(values).countBy().entries().maxBy(_.last)
-    );
-  }
-
+    console.log("Logging this:", this)
+    switch (this.compute_template) {
+      case "most_frequent":
+        this.attribute[this.output_property] = _.head(
+          _(values).countBy().entries().maxBy(_.last)
+        )
+        break
+      case "max":
+        this.attribute[this.output_property] = _.max(values);
+        break
+      case "custom":
+        var attribute = this.custom_method(values);
+        this.attribute[this.output_property] = attribute;
+        break;
+      default:
+        var attribute = _.head(values);
+        this.attribute[this.output_property] = attribute;
+        break;
+  }}
+  
   // mapping paths to their current values and adding all those values to the this.attribute_data property
   _composeAttributeData() {
     const values = _.map(this.input_properties, (property) => {
