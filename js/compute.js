@@ -1,7 +1,7 @@
-const _ = require('lodash');
-const urijs = require('urijs');
+const _ = require("lodash");
+const urijs = require("urijs");
 
-const account = require('../sample_account.json');
+const account = require("../sample_account.json");
 
 /**
  *
@@ -30,36 +30,70 @@ const CONSOLE_LOG_COMPUTE_DATA = true;
 const STRATEGIES = [
   // Something is wrong with this strategy, can't figure out why it doesn't work.
   {
-    output_property: 'account/name',
-    input_properties: ['clearbit.name', 'hubspot.name', 'goodfit.name'],
+    output_property: "account/name",
+    input_properties: ["clearbit.name", "hubspot.name", "goodfit.name"],
   },
   // Need to finish this using urijs
   {
-    output_property: 'domain',
+    output_property: "domain",
     input_properties: [
-      'hubspot.website',
-      'system.first_known_website',
-      'clearbit.domain',
+      "hubspot.website",
+      "system.first_known_website",
+      "clearbit.domain",
     ],
-    compute_template: 'custom',
+    compute_template: "custom",
     custom_method: (values) => {
       // How to get the right value here?
       const website = _.head(values);
       const uri = urijs(website);
-      const domain = uri.domain()
-      console.log("Domain log:", domain)
+      const domain = uri.domain();
+      console.log("Domain log:", domain);
       // console.log(uri);
       // return 'placeholder.com';
       return domain;
     },
   },
   {
-    output_property: 'icp_properties/estimated_revenue',
+    output_property: "icp_properties/estimated_revenue",
     input_properties: [
-      'clearbit.metrics_annual_revenue',
-      'hubspot.annual_revenue',
+      "clearbit.metrics_annual_revenue",
+      "hubspot.annual_revenue",
     ],
-    compute_template: 'max',
+    compute_template: "max",
+  },
+  {
+    output_property: "account/number_of_employees",
+    input_properties: [
+      "icp_properties.employee_count_number",
+      "clearbit.metrics_employees",
+    ],
+    compute_template: "most_frequent",
+  },
+  {
+    output_property: "account/name_of_country",
+    input_properties: [
+      "icp_properties.country_iso_headquarters",
+      "icp_properties.country_name_headquarters",
+      "clearbit.geo_country",
+      "clearbit.geo_country_code",
+      "hubspot.country",
+      "goodfit.country_code",
+      "aggregations.country_name_headquarters",
+    ],
+    compute_template: "custom",
+    custom_method: (values) => {
+      const countries = _.compact(
+        _.map(values, (country) => {
+          console.log("Countries passed:", country.length > 2);
+          if (country.length > 2) {
+            return country;
+          }
+        })
+      );
+
+      return _.head(_(countries).countBy().entries().maxBy(_.last));
+      //  console.log("final country:", finalCountry)
+    },
   },
 ];
 
@@ -76,15 +110,15 @@ class Compute {
 
   run() {
     this._composeAttributeData();
-    console.log("First console log of this:",this, '\n');
+    console.log("First console log of this:", this, "\n");
     switch (this.compute_template) {
-      case 'most_frequent':
+      case "most_frequent":
         this._computeMostFrequentValue(this.attribute_data);
         break;
-      case 'max':
+      case "max":
         this._computeHighestValue(this.attribute_data);
         break;
-      case 'custom':
+      case "custom":
         this._computeCustomMethod(this.attribute_data);
         break;
       default:
@@ -93,19 +127,19 @@ class Compute {
 
     this._checkExitConditions();
     if (CONSOLE_LOG_COMPUTE_DATA) {
-      console.log(this, '\n');
+      console.log(this, "\n");
     }
   }
 
   _computeMethod(values) {
     if (_.isEmpty(values)) return;
     const attribute = _.head(values);
-    this.attribute[this.output_property] = attribute
-    console.log ("Compute Method:", this)
+    this.attribute[this.output_property] = attribute;
+    console.log("Compute Method:", this);
   }
 
   _computeCustomMethod(values) {
-     // checking if this.attribute_data is empty 
+    // checking if this.attribute_data is empty
     if (_.isEmpty(values)) return;
     // adding an attribute to the this.attribute property using a custom strategy method
     const attribute = this.custom_method(values);
@@ -128,10 +162,10 @@ class Compute {
   _composeAttributeData() {
     const values = _.map(this.input_properties, (property) => {
       const value = _.get(account, property, undefined);
-      console.log("ComposeAttribute Method result:", property, value)
+      console.log("ComposeAttribute Method result:", property, value);
       return value;
     });
-    console.log("Values array", values)
+    console.log("Values array", values);
     this.attribute_data = _.compact(values);
   }
 
@@ -146,16 +180,18 @@ class Compute {
     if (isEmpty(this.attribute) === true) return;
 
     // checking if there's already an existing value for the attribute in question.
-    const path = _.replace(this.output_property, '/', '.');
+    const path = _.replace(this.output_property, "/", ".");
     const currentAttributeValue = _.get(account, path, undefined);
-    console.log("Current Attribute Value:", currentAttributeValue)
+    console.log("Current Attribute Value:", currentAttributeValue);
 
     if (currentAttributeValue === undefined) {
       this.update_needed = true;
       return;
     }
 
-    console.log("Is new value logic:", {[this.output_property]: currentAttributeValue})
+    console.log("Is new value logic:", {
+      [this.output_property]: currentAttributeValue,
+    });
     const isNewValue = !_.isEqual(this.attribute, {
       [this.output_property]: currentAttributeValue,
     });
@@ -182,4 +218,4 @@ _.forEach(STRATEGIES, (strategy) => {
   }
 });
 
-console.log('UPDATED ATTRIBUTES:', attributes);
+console.log("UPDATED ATTRIBUTES:", attributes);
