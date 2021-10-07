@@ -48,8 +48,6 @@ const STRATEGIES = [
       const uri = urijs(website);
       const domain = uri.domain();
       console.log("Domain log:", domain);
-      // console.log(uri);
-      // return 'placeholder.com';
       return domain;
     },
   },
@@ -72,11 +70,8 @@ const STRATEGIES = [
   {
     output_property: "account/name_of_country",
     input_properties: [
-      "icp_properties.country_iso_headquarters",
       "icp_properties.country_name_headquarters",
       "clearbit.geo_country",
-      "clearbit.geo_country_code",
-      "hubspot.country",
       "goodfit.country_code",
       "aggregations.country_name_headquarters",
     ],
@@ -84,15 +79,28 @@ const STRATEGIES = [
     custom_method: (values) => {
       const countries = _.compact(
         _.map(values, (country) => {
-          console.log("Countries passed:", country.length > 2);
-          if (country.length > 2) {
-            return country;
-          }
+            return country;  
         })
       );
-
       return _.head(_(countries).countBy().entries().maxBy(_.last));
-      //  console.log("final country:", finalCountry)
+    },
+  },
+  {
+    output_property: "account/ISO_country_code",
+    input_properties: [
+      "icp_properties.country_iso_headquarters",
+      "clearbit.geo_country_code",
+      "hubspot.country",
+      "goodfit.country_code",
+    ],
+    compute_template: "custom",
+    custom_method: (values) => {
+      const countries = _.compact(
+        _.map(values, (country) => {
+            return country;
+        })
+      );
+      return _.head(_(countries).countBy().entries().maxBy(_.last));
     },
   },
 ];
