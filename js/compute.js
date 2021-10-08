@@ -92,14 +92,14 @@ const STRATEGIES = [
   },
 ];
 
-function mostCommonValue(values){
+function mostCommonValue(values) {
   const list = _.compact(
     _.map(values, (value) => {
-        return value;
+      return value;
     })
   );
-  return _.head(_(list).countBy().entries().maxBy(_.last))
-  }
+  return _.head(_(list).countBy().entries().maxBy(_.last));
+}
 
 class Compute {
   constructor(strategy) {
@@ -120,28 +120,25 @@ class Compute {
       console.log(this, "\n");
     }
   }
-  _computeMethod(values){
-    if (_.isEmpty(values)) return;
-    console.log("Logging this:", this)
-    switch (this.compute_template) {
-      case "most_frequent":
-        this.attribute[this.output_property] = _.head(
-          _(values).countBy().entries().maxBy(_.last)
-        )
-        break
-      case "max":
-        this.attribute[this.output_property] = _.max(values);
-        break
-      case "custom":
-        var attribute = this.custom_method(values);
-        this.attribute[this.output_property] = attribute;
-        break;
-      default:
-        var attribute = _.head(values);
-        this.attribute[this.output_property] = attribute;
-        break;
-  }}
-  
+
+  _computeMethod(values) {
+    if (_.isEmpty(values)) {
+      return;
+    } else if (this.compute_template === "most_frequent") {
+      this.attribute[this.output_property] = _.head(
+        _(values).countBy().entries().maxBy(_.last)
+      );
+    } else if (this.compute_template === "max") {
+      this.attribute[this.output_property] = _.max(values);
+    } else if (this.compute_template === "custom") {
+      const attribute = this.custom_method(values);
+      this.attribute[this.output_property] = attribute;
+    } else {
+      const attribute = _.head(values);
+      this.attribute[this.output_property] = attribute;
+    }
+  }
+
   // mapping paths to their current values and adding all those values to the this.attribute_data property
   _composeAttributeData() {
     const values = _.map(this.input_properties, (property) => {
@@ -184,7 +181,6 @@ class Compute {
       this.update_needed = true;
       return;
     }
-
     return false;
   }
 }
