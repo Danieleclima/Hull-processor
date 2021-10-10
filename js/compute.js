@@ -75,6 +75,7 @@ const STRATEGIES = [
       "clearbit.geo_country",
       "goodfit.country_code",
       "aggregations.country_name_headquarters",
+      ['user_submitted', 'country_name', 'r.makara@paddle.com'],
     ],
     compute_template: "custom",
     custom_method: mostCommonValue,
